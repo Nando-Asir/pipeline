@@ -9,7 +9,8 @@ services:
 
   jenkins:
     image: jenkins/jenkins:lts
-    user: root  # Crucial para que pueda leer el docker.sock
+    container_name: jenkins
+    user: root
     ports:
       - "8080:8080"
       - "50000:50000"
@@ -19,9 +20,43 @@ services:
     networks:
       - jenkins-net
 
+  # --- NUEVOS SERVICIOS PARA SONARQUBE ---
+  sonarqube:
+    image: sonarqube:lts-community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    networks:
+      - jenkins-net
+    environment:
+      - SONAR_JDBC_URL=jdbc:postgresql://db-sonar:5432/sonar
+      - SONAR_JDBC_USERNAME=sonar
+      - SONAR_JDBC_PASSWORD=sonar
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    depends_on:
+      - db-sonar
+
+  db-sonar:
+    image: postgres:15
+    container_name: db-sonar
+    networks:
+      - jenkins-net
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
 networks:
   jenkins-net:
 
 volumes:
-  # Cambiado a jenkins_home para coincidir con tu carpeta local
   jenkins_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  postgres_data:
