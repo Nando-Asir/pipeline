@@ -25,7 +25,7 @@ services:
     image: sonarqube:lts-community
     container_name: sonarqube
     ports:
-      - "9100:9100"
+      - "9100:9000"
     networks:
       - jenkins-net
     environment:
