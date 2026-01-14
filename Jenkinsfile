@@ -2,25 +2,23 @@ pipeline {
     agent any
     
     environment {
-        // Definimos el nombre de la imagen para usarlo en varias etapas
         IMAGE_NAME = "fase1"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm [cite: 1]
+                // Opción más simple para evitar el error de 'scm' [cite: 1]
+                checkout scm 
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Invocamos la herramienta que configuraste en Jenkins
                     def scannerHome = tool 'SonarScanner'
-                    
-                    // Usamos el entorno del servidor SonarQube-Server
                     withSonarQubeEnv('SonarQube-Server') {
+                        // Usamos comillas dobles claras para la ruta del scanner
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }
@@ -29,7 +27,6 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                // Jenkins espera a que SonarQube dé el visto bueno
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
@@ -38,16 +35,16 @@ pipeline {
          
         stage('Build Image') {
             steps {
-                // Usamos variables para que sea más limpio
-                sh "docker build -t ${IMAGE_NAME}:latest ." [cite: 2]
+                // Usamos comillas simples para el comando estático y evitamos caracteres extra [cite: 2]
+                sh "docker build -t ${env.IMAGE_NAME}:latest ."
             }
         }
 
         stage('Run Container') {
             steps {
-                // Eliminamos cualquier contenedor previo con el mismo nombre para evitar errores
+                // Limpiamos el comando run para que sea una sola línea simple [cite: 3, 4]
                 sh "docker rm -f test-container || true"
-                sh "docker run --name test-container -d ${IMAGE_NAME}:latest" [cite: 4]
+                sh "docker run --name test-container -d ${env.IMAGE_NAME}:latest"
             }
         }
     }
