@@ -17,7 +17,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Localizamos la herramienta configurada en Jenkins [cite: 3]
+                    // Localizamos la herramienta configurada en Jenkins
                     def scannerHome = tool 'SonarScanner'
                     
                     // Ejecución con los parámetros de tu servidor local
@@ -25,7 +25,7 @@ pipeline {
                         sh "${scannerHome}/bin/sonar-scanner \
                             -Dsonar.projectKey=Jenkins \
                             -Dsonar.sources=. \
-                            -Dsonar.host.url=http://localhost:9100 \
+                            -Dsonar.host.url=http://sonarqube:9000 \
                             -Dsonar.login=squ_925bd641615fa8749e0d005b16317695e31bc541"
                     }
                 }
@@ -52,7 +52,7 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                // Gestión del contenedor para evitar conflictos [cite: 8]
+                // Gestión del contenedor para evitar conflictos
                 sh "docker rm -f test-container || true"
                 sh "docker run --name test-container -d ${IMAGE_NAME}:latest"
             }
