@@ -2,31 +2,31 @@ pipeline {
     agent any
     
     environment {
-        // Definimos el nombre de la imagen para usarlo en varias etapas
-        IMAGE_NAME = "fase1" [cite: 1]
+        // Definimos la variable sin caracteres especiales problemáticos
+        IMAGE_NAME = "fase1"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Descarga del código fuente desde el repositorio configurado
-                checkout scm [cite: 1]
+                // Descarga el código del repositorio 
+                checkout scm 
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Localiza la herramienta SonarScanner en el servidor Jenkins
-                    def scannerHome = tool 'SonarScanner' [cite: 3]
+                    // Localizamos la herramienta configurada en Jenkins [cite: 3]
+                    def scannerHome = tool 'SonarScanner'
                     
-                    // Ejecuta el análisis usando el servidor configurado y tus parámetros específicos
-                    withSonarQubeEnv('SonarQube-Server') { [cite: 4]
+                    // Ejecución con los parámetros de tu servidor local
+                    withSonarQubeEnv('SonarQube-Server') {
                         sh "${scannerHome}/bin/sonar-scanner \
-                          -Dsonar.projectKey=Jenkins \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=http://localhost:9100 \
-                          -Dsonar.login=squ_925bd641615fa8749e0d005b16317695e31bc541"
+                            -Dsonar.projectKey=Jenkins \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://localhost:9100 \
+                            -Dsonar.login=squ_925bd641615fa8749e0d005b16317695e31bc541"
                     }
                 }
             }
@@ -34,26 +34,27 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                // Jenkins detendrá el pipeline si SonarQube determina que el código no es apto
-                timeout(time: 5, unit: 'MINUTES') { [cite: 5]
-                    waitForQualityGate abortPipeline: true [cite: 5]
+                // Se envuelve en un bloque script para asegurar que waitForQualityGate funcione bien
+                script {
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
+                    }
                 }
             }
         }
          
         stage('Build Image') {
             steps {
-                // Construcción de la imagen Docker utilizando la variable de entorno
-                sh "docker build -t ${IMAGE_NAME}:latest ." [cite: 6, 7]
+                // Construcción de la imagen Docker 
+                sh "docker build -t ${IMAGE_NAME}:latest ."
             }
         }
 
         stage('Run Container') {
             steps {
-                // Limpieza de contenedores previos para evitar conflictos de nombre
-                sh "docker rm -f test-container || true" [cite: 8]
-                // Despliegue del nuevo contenedor basado en la imagen construida
-                sh "docker run --name test-container -d ${IMAGE_NAME}:latest" [cite: 8]
+                // Gestión del contenedor para evitar conflictos [cite: 8]
+                sh "docker rm -f test-container || true"
+                sh "docker run --name test-container -d ${IMAGE_NAME}:latest"
             }
         }
     }
