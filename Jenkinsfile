@@ -2,24 +2,31 @@ pipeline {
     agent any
     
     environment {
-        IMAGE_NAME = "fase1"
+        // Definimos el nombre de la imagen para usarlo en varias etapas
+        IMAGE_NAME = "fase1" [cite: 1]
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Opción más simple para evitar el error de 'scm' [cite: 1]
-                checkout scm 
+                // Descarga del código fuente desde el repositorio configurado
+                checkout scm [cite: 1]
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    def scannerHome = tool 'SonarScanner'
-                    withSonarQubeEnv('SonarQube-Server') {
-                        // Usamos comillas dobles claras para la ruta del scanner
-                        sh "${scannerHome}/bin/sonar-scanner"
+                    // Localiza la herramienta SonarScanner en el servidor Jenkins
+                    def scannerHome = tool 'SonarScanner' [cite: 3]
+                    
+                    // Ejecuta el análisis usando el servidor configurado y tus parámetros específicos
+                    withSonarQubeEnv('SonarQube-Server') { [cite: 4]
+                        sh "${scannerHome}/bin/sonar-scanner \
+                          -Dsonar.projectKey=Jenkins \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://localhost:9100 \
+                          -Dsonar.login=squ_925bd641615fa8749e0d005b16317695e31bc541"
                     }
                 }
             }
@@ -27,24 +34,26 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                // Jenkins detendrá el pipeline si SonarQube determina que el código no es apto
+                timeout(time: 5, unit: 'MINUTES') { [cite: 5]
+                    waitForQualityGate abortPipeline: true [cite: 5]
                 }
             }
         }
          
         stage('Build Image') {
             steps {
-                // Usamos comillas simples para el comando estático y evitamos caracteres extra [cite: 2]
-                sh "docker build -t ${env.IMAGE_NAME}:latest ."
+                // Construcción de la imagen Docker utilizando la variable de entorno
+                sh "docker build -t ${IMAGE_NAME}:latest ." [cite: 6, 7]
             }
         }
 
         stage('Run Container') {
             steps {
-                // Limpiamos el comando run para que sea una sola línea simple [cite: 3, 4]
-                sh "docker rm -f test-container || true"
-                sh "docker run --name test-container -d ${env.IMAGE_NAME}:latest"
+                // Limpieza de contenedores previos para evitar conflictos de nombre
+                sh "docker rm -f test-container || true" [cite: 8]
+                // Despliegue del nuevo contenedor basado en la imagen construida
+                sh "docker run --name test-container -d ${IMAGE_NAME}:latest" [cite: 8]
             }
         }
     }
